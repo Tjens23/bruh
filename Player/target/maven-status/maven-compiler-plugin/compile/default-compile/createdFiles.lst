@@ -1,0 +1,6 @@
+dk\sdu\cbse\player\Player.class
+dk\sdu\cbse\player\PlayerWeaponService.class
+dk\sdu\cbse\player\PlayerPlugin.class
+module-info.class
+dk\sdu\cbse\player\PlayerComponent.class
+dk\sdu\cbse\player\PlayerProcessor.class

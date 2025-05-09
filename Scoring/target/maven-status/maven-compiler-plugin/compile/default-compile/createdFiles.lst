@@ -1,0 +1,6 @@
+dk\sdu\cbse\scoring\controller\ScoreController.class
+dk\sdu\cbse\scoring\repository\ScoreRepository.class
+dk\sdu\cbse\scoring\controller\ScoreController$ScoreRequest.class
+dk\sdu\cbse\scoring\ScoringApplication$1.class
+dk\sdu\cbse\scoring\model\Score.class
+dk\sdu\cbse\scoring\ScoringApplication.class
