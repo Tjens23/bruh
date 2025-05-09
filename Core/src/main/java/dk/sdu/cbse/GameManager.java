@@ -42,6 +42,17 @@ public class GameManager {
      */
     public GameManager() {
         logger.info("GameManager created");
+        
+        // Initialize lists to avoid NullPointerException when not using Spring
+        if (entityProcessors == null) {
+            entityProcessors = new ArrayList<>();
+        }
+        if (gamePlugins == null) {
+            gamePlugins = new ArrayList<>();
+        }
+        if (postEntityProcessors == null) {
+            postEntityProcessors = new ArrayList<>();
+        }
     }
     
     /**
@@ -145,27 +156,36 @@ public class GameManager {
     /**
      * Gets the entity processors.
      * 
-     * @return The entity processors
+     * @return The entity processors (never null)
      */
     public List<IEntityProcessorService> getEntityProcessors() {
+        if (entityProcessors == null) {
+            entityProcessors = new ArrayList<>();
+        }
         return entityProcessors;
     }
     
     /**
      * Gets the game plugins.
      * 
-     * @return The game plugins
+     * @return The game plugins (never null)
      */
     public List<IGamePluginService> getGamePlugins() {
+        if (gamePlugins == null) {
+            gamePlugins = new ArrayList<>();
+        }
         return gamePlugins;
     }
     
     /**
      * Gets the post entity processors.
      * 
-     * @return The post entity processors
+     * @return The post entity processors (never null)
      */
     public List<IPostEntityProcessorService> getPostEntityProcessors() {
+        if (postEntityProcessors == null) {
+            postEntityProcessors = new ArrayList<>();
+        }
         return postEntityProcessors;
     }
 }

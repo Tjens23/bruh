@@ -21,10 +21,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.stereotype.Component;
+
+import java.util.ServiceLoader;
+import java.lang.reflect.Field;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +36,6 @@ import java.util.logging.Logger;
  * Main application class for the Asteroids game.
  * Sets up the game window, game loop, and entity processing.
  */
-@Component
 public class App extends Application {
     // Logger
     private static final Logger logger = Logger.getLogger(App.class.getName());
@@ -50,11 +48,11 @@ public class App extends Application {
     private List<Entity> entities = new ArrayList<>();
     
     // Spring-injected GameManager
-    @Autowired
+    // Spring would autowire this
     private GameManager gameManager;
     
     // Component system
-    @Autowired
+    // Spring would autowire this
     private List<IComponentService> components;
     
     private final Map<String, IComponentService> componentMap = new HashMap<>();
@@ -74,32 +72,57 @@ public class App extends Application {
     private long lastTime = 0;
     
     // Services
-    @Autowired
     private CollisionProcessor collisionProcessor;
     
-    @Autowired
     private ICollisionService collisionService;
     
-    @Autowired
     private IScoreService scoreService;
     
     // Player name for score tracking
     private String playerName = "Player";
     
     // Spring application context
-    private static ApplicationContext applicationContext;
+    private static Object applicationContext;
     
     /**
      * Entry point for the application
      */
     public static void main(String[] args) {
-        // Initialize Spring ApplicationContext
-        applicationContext = new AnnotationConfigApplicationContext(CoreConfig.class);
-        
-        // Register the App bean with Spring
-        ((AnnotationConfigApplicationContext) applicationContext).registerBean(App.class);
+        try {
+            // Try to initialize Spring ApplicationContext via reflection
+            logger.info("Trying to initialize Spring ApplicationContext via reflection");
+            Class<?> annoConfigAppCtxClass = Class.forName("org.springframework.context.annotation.AnnotationConfigApplicationContext");
+            Object appContext = annoConfigAppCtxClass.getDeclaredConstructor(Class.class).newInstance(CoreConfig.class);
+            
+            // Register the App bean with Spring using reflection
+            java.lang.reflect.Method registerBeanMethod = annoConfigAppCtxClass.getMethod("registerBean", Class.class);
+            registerBeanMethod.invoke(appContext, App.class);
+            
+            applicationContext = appContext;
+            usingSpring = true;
+            logger.info("Using Spring for dependency injection");
+        } catch (Throwable e) {
+            // Spring initialization failed, fall back to ServiceLoader
+            logger.warning("Spring initialization failed, falling back to ServiceLoader: " + e.getMessage());
+            usingSpring = false;
+            initializeWithServiceLoader();
+        }
         
         launch(args);
+    }
+    
+    // Flag to indicate if Spring initialization was successful
+    private static boolean usingSpring = false;
+    
+    /**
+     * Initializes the application using Java's ServiceLoader mechanism instead of Spring.
+     * This is a fallback when Spring is not available.
+     */
+    private static void initializeWithServiceLoader() {
+        logger.info("Initializing with ServiceLoader");
+        // This method will be called when Spring is not available
+        // We don't need to do anything here as the ServiceLoader-based initialization
+        // will happen in the start() method when applicationContext is null
     }
     
     /**
@@ -129,14 +152,27 @@ public class App extends Application {
         root.getProperties().put("entities", entities);
         
         try {
-            // Get the App bean from Spring context and update this instance
-            App appBean = applicationContext.getBean(App.class);
-            
-            // Initialize component system first
-            initializeComponentSystem();
-            
-            // Initialize game manager
-            initializeGameManager();
+            if (usingSpring) {
+                try {
+                    // Get the App bean from Spring context using reflection
+                    Class<?> appContextClass = applicationContext.getClass();
+                    java.lang.reflect.Method getBeanMethod = appContextClass.getMethod("getBean", Class.class);
+                    App appBean = (App) getBeanMethod.invoke(applicationContext, App.class);
+                    
+                    // Initialize component system first using Spring
+                    initializeComponentSystem();
+                    
+                    // Initialize game manager using Spring
+                    initializeGameManager();
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Error using Spring reflection", e);
+                    // Fall back to non-Spring initialization
+                    initializeWithoutSpring();
+                }
+            } else {
+                // Initialize without Spring, using ServiceLoader
+                initializeWithoutSpring();
+            }
             
             // Set up game loop
             setupGameLoop();
@@ -156,13 +192,36 @@ public class App extends Application {
     private void initializeComponentSystem() {
         logger.info("Initializing component system");
         
-        // Components are already loaded by Spring via dependency injection
-        
-        // First pass: collect all components
-        for (IComponentService component : components) {
-            logger.info("Found component: " + component.getName());
-            components.add(component);
-            componentMap.put(component.getName(), component);
+        // Components should be loaded by Spring via dependency injection
+        // Use reflection to get them from the context
+        try {
+            Class<?> appContextClass = applicationContext.getClass();
+            java.lang.reflect.Method getBeansOfTypeMethod = appContextClass.getMethod("getBeansOfType", Class.class);
+            Object componentMap = getBeansOfTypeMethod.invoke(applicationContext, IComponentService.class);
+            
+            // Get the values() method from the returned Map
+            Class<?> mapClass = componentMap.getClass();
+            java.lang.reflect.Method valuesMethod = mapClass.getMethod("values");
+            java.util.Collection<?> componentCollection = (java.util.Collection<?>) valuesMethod.invoke(componentMap);
+            
+            // Initialize components list if it's null
+            if (components == null) {
+                components = new ArrayList<>();
+            }
+            
+            // Convert to List<IComponentService>
+            for (Object component : componentCollection) {
+                IComponentService componentService = (IComponentService) component;
+                logger.info("Found component: " + componentService.getName());
+                components.add(componentService);
+                this.componentMap.put(componentService.getName(), componentService);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Could not get components from Spring context", e);
+            // Fall back to empty list if reflection fails
+            if (components == null) {
+                components = new ArrayList<>();
+            }
         }
         
         // Second pass: initialize all components
@@ -196,16 +255,156 @@ public class App extends Application {
     private void initializeGameManager() {
         logger.info("Initializing game manager");
         
-        // Initialize game manager (which will start all game plugins)
-        gameManager.initialize();
-        
-        // Get the entities from the game manager
-        entities = gameManager.getEntities();
+        try {
+            // Get the game manager using reflection if it wasn't set automatically
+            if (gameManager == null && applicationContext != null) {
+                Class<?> appContextClass = applicationContext.getClass();
+                java.lang.reflect.Method getBeanMethod = appContextClass.getMethod("getBean", Class.class);
+                gameManager = (GameManager) getBeanMethod.invoke(applicationContext, GameManager.class);
+            }
+            
+            // Initialize game manager (which will start all game plugins)
+            if (gameManager != null) {
+                gameManager.initialize();
+                
+                // Get the entities from the game manager
+                entities = gameManager.getEntities();
+            } else {
+                logger.warning("Game manager is null, cannot initialize");
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Could not get game manager from Spring context", e);
+        }
         
         // Initialize score service
         initializeScoreService();
         
         logger.info("Game manager initialized");
+    }
+    
+    /**
+     * Initializes the application without Spring using ServiceLoader.
+     * This loads all services manually and sets up the necessary components.
+     */
+    private void initializeWithoutSpring() {
+        logger.info("Initializing without Spring");
+        
+        // Create a new GameManager
+        gameManager = new GameManager();
+        
+        // Initialize lists in GameManager that would normally be autowired by Spring
+        try {
+            // Initialize entityProcessors list
+            Field entityProcessorsField = GameManager.class.getDeclaredField("entityProcessors");
+            entityProcessorsField.setAccessible(true);
+            entityProcessorsField.set(gameManager, new ArrayList<>());
+            
+            // Initialize gamePlugins list
+            Field gamePluginsField = GameManager.class.getDeclaredField("gamePlugins");
+            gamePluginsField.setAccessible(true);
+            gamePluginsField.set(gameManager, new ArrayList<>());
+            
+            // Initialize postEntityProcessors list
+            Field postEntityProcessorsField = GameManager.class.getDeclaredField("postEntityProcessors");
+            postEntityProcessorsField.setAccessible(true);
+            postEntityProcessorsField.set(gameManager, new ArrayList<>());
+            
+            // Add verification logs for each field
+            logger.info("After reflection, entityProcessors is: " + 
+                (gameManager.getEntityProcessors() == null ? "null" : "not null"));
+            logger.info("After reflection, gamePlugins is: " + 
+                (gameManager.getGamePlugins() == null ? "null" : "not null"));
+            logger.info("After reflection, postEntityProcessors is: " + 
+                (gameManager.getPostEntityProcessors() == null ? "null" : "not null"));
+            
+            logger.info("Initialized GameManager collections using reflection");
+        } catch (Exception e) {
+            logger.log(Level.SEVERE, "Failed to initialize GameManager collections", e);
+        }
+        
+        // Load all service implementations using ServiceLoader
+        // Load IEntityProcessorService implementations
+        ServiceLoader<IEntityProcessorService> entityProcessors = 
+            ServiceLoader.load(IEntityProcessorService.class);
+        
+        // Debug log before accessing getEntityProcessors
+        logger.info("About to access entityProcessors. Is gameManager null? " + (gameManager == null));
+        if (gameManager != null) {
+            logger.info("Direct field value check - entityProcessors field: " + 
+                (gameManager.getEntityProcessors() == null ? "null" : "not null"));
+        }
+        
+        for (IEntityProcessorService processor : entityProcessors) {
+            gameManager.getEntityProcessors().add(processor);
+            logger.info("Loaded entity processor: " + processor.getClass().getSimpleName());
+        }
+        
+        // Load IGamePluginService implementations
+        ServiceLoader<IGamePluginService> gamePlugins = 
+            ServiceLoader.load(IGamePluginService.class);
+        for (IGamePluginService plugin : gamePlugins) {
+            gameManager.getGamePlugins().add(plugin);
+            logger.info("Loaded game plugin: " + plugin.getClass().getSimpleName());
+        }
+        
+        // Load IPostEntityProcessorService implementations
+        ServiceLoader<IPostEntityProcessorService> postProcessors = 
+            ServiceLoader.load(IPostEntityProcessorService.class);
+        for (IPostEntityProcessorService postProcessor : postProcessors) {
+            gameManager.getPostEntityProcessors().add(postProcessor);
+            logger.info("Loaded post processor: " + postProcessor.getClass().getSimpleName());
+        }
+        
+        // Load ICollisionService implementation
+        ServiceLoader<ICollisionService> collisionServices = 
+            ServiceLoader.load(ICollisionService.class);
+        collisionService = collisionServices.findFirst().orElse(null);
+        if (collisionService != null) {
+            logger.info("Loaded collision service: " + collisionService.getClass().getSimpleName());
+        } else {
+            logger.warning("No collision service found");
+        }
+        
+        // Set collision processor based on collision service
+        collisionProcessor = (collisionService instanceof CollisionProcessor) ? 
+            (CollisionProcessor) collisionService : new CollisionProcessor();
+        
+        // Load IScoreService implementation
+        ServiceLoader<IScoreService> scoreServices = 
+            ServiceLoader.load(IScoreService.class);
+        scoreService = scoreServices.findFirst().orElse(null);
+        if (scoreService != null) {
+            logger.info("Loaded score service: " + scoreService.getClass().getSimpleName());
+            initializeScoreService();
+        } else {
+            logger.warning("No score service found");
+        }
+        
+        // Load component services
+        components = new ArrayList<>();
+        ServiceLoader<IComponentService> componentServices = 
+            ServiceLoader.load(IComponentService.class);
+        for (IComponentService component : componentServices) {
+            components.add(component);
+            componentMap.put(component.getName(), component);
+            logger.info("Loaded component: " + component.getClass().getSimpleName());
+            
+            // Initialize the component
+            try {
+                component.init();
+                component.start();
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Error initializing component: " + component.getName(), e);
+            }
+        }
+        
+        // Initialize the game manager
+        gameManager.initialize();
+        
+        // Get the entities from the game manager
+        entities = gameManager.getEntities();
+        
+        logger.info("Non-Spring initialization complete");
     }
     
     /**
@@ -215,11 +414,26 @@ public class App extends Application {
         logger.info("Initializing score service");
         
         try {
-            scoreService.initialize();
-            if (scoreService.isServiceAvailable()) {
-                logger.info("Score service initialized successfully");
+            // Try to get score service from Spring if it wasn't set already
+            if (scoreService == null && applicationContext != null && usingSpring) {
+                try {
+                    Class<?> appContextClass = applicationContext.getClass();
+                    java.lang.reflect.Method getBeanMethod = appContextClass.getMethod("getBean", Class.class);
+                    scoreService = (IScoreService) getBeanMethod.invoke(applicationContext, IScoreService.class);
+                } catch (Exception e) {
+                    logger.log(Level.WARNING, "Could not get score service from Spring context", e);
+                }
+            }
+            
+            if (scoreService != null) {
+                scoreService.initialize();
+                if (scoreService.isServiceAvailable()) {
+                    logger.info("Score service initialized successfully");
+                } else {
+                    logger.warning("Score service is not available");
+                }
             } else {
-                logger.warning("Score service is not available");
+                logger.warning("Score service is null, cannot initialize");
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "Failed to initialize score service", e);

@@ -5,12 +5,12 @@ module Core {
     requires javafx.fxml;
     requires java.logging;
     
-    // Spring Framework modules
-    requires spring.core;
-    requires spring.beans;
-    requires spring.context;
-    requires spring.web;
-    requires spring.aop;
+    // Spring Framework modules - optional at runtime
+    requires static spring.core;
+    requires static spring.beans;
+    requires static spring.context;
+    requires static spring.web;
+    requires static spring.aop;
     
 // Exported packages - these are accessible to other modules
     exports dk.sdu.cbse;                    // Main package with App class
