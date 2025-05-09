@@ -80,7 +80,7 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.2.0</version>
                 <configuration>
-                    <outputDirectory>../mods-mvn</outputDirectory>
+                    <outputDirectory>../mods-mvn-new</outputDirectory>
                 </configuration>
             </plugin>
             <plugin>
@@ -94,7 +94,7 @@
                         </goals>
                         <configuration>
                             <classifier>exec</classifier>
-                            <outputDirectory>../mods-mvn</outputDirectory>
+                            <outputDirectory>../mods-mvn-new</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

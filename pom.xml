@@ -32,6 +32,21 @@
     </dependencies>
   </dependencyManagement>
   <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <executable>java</executable>
+          <arguments>
+            <argument>--module-path=mods-mvn-new;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-graphics\${javafx.version}\javafx-graphics-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-controls\${javafx.version}\javafx-controls-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-fxml\${javafx.version}\javafx-fxml-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-base\${javafx.version}\javafx-base-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-core\5.3.20\spring-core-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-context\5.3.20\spring-context-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-beans\5.3.20\spring-beans-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-web\5.3.20\spring-web-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-aop\5.3.20\spring-aop-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-expression\5.3.20\spring-expression-5.3.20.jar</argument>
+            <argument>--class-path=libs/*</argument>
+            <argument>--module=Core/dk.sdu.cbse.App</argument>
+          </arguments>
+        </configuration>
+      </plugin>
+    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -51,7 +66,7 @@
           <configuration>
             <executable>java</executable>
             <arguments>
-<argument>--module-path=mods-mvn;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-graphics\${javafx.version}\javafx-graphics-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-controls\${javafx.version}\javafx-controls-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-fxml\${javafx.version}\javafx-fxml-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-base\${javafx.version}\javafx-base-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-core\5.3.20\spring-core-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-context\5.3.20\spring-context-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-beans\5.3.20\spring-beans-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-web\5.3.20\spring-web-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-aop\5.3.20\spring-aop-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-expression\5.3.20\spring-expression-5.3.20.jar</argument>
+<argument>--module-path=mods-mvn-new;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-graphics\${javafx.version}\javafx-graphics-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-controls\${javafx.version}\javafx-controls-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-fxml\${javafx.version}\javafx-fxml-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\openjfx\javafx-base\${javafx.version}\javafx-base-${javafx.version}-win.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-core\5.3.20\spring-core-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-context\5.3.20\spring-context-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-beans\5.3.20\spring-beans-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-web\5.3.20\spring-web-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-aop\5.3.20\spring-aop-5.3.20.jar;C:\Users\BitOfAByte\.m2\repository\org\springframework\spring-expression\5.3.20\spring-expression-5.3.20.jar</argument>
               <argument>--class-path=libs/*</argument>
               <argument>--module=Core/dk.sdu.cbse.App</argument>
             </arguments>

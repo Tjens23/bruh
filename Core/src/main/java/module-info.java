@@ -4,7 +4,6 @@ module Core {
     requires javafx.graphics;
     requires javafx.fxml;
     requires java.logging;
-    
     // Spring Framework modules - optional at runtime
     requires static spring.core;
     requires static spring.beans;
